@@ -28,6 +28,9 @@ tags=shields, weapon, item, tank, wotc, war of the chosen</Description>
     <Content Include="Config\XComGameData.ini">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="Config\XComShieldAttachmentsSetup.ini">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="Config\XComShields.ini">
       <SubType>Content</SubType>
     </Content>
@@ -46,6 +49,9 @@ tags=shields, weapon, item, tank, wotc, war of the chosen</Description>
     <Content Include="Content\WoTC_Shield_UI.upk">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="Content\WoTC_Spark_Shields.upk">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="Localization\WotCBallisticShields.int">
       <SubType>Content</SubType>
     </Content>
@@ -55,7 +61,13 @@ tags=shields, weapon, item, tank, wotc, war of the chosen</Description>
     <Content Include="Config\XComEngine.ini" />
     <Content Include="Config\XComGame.ini" />
     <Content Include="Localization\XComGame.int" />
+    <Content Include="Src\WotCBallisticShields\Classes\AnimNotify_ShieldAnimation.uc">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="Src\WotCBallisticShields\Classes\X2Ability_ShieldAbilitySet.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\WotCBallisticShields\Classes\X2Condition_ExcludeCharacterTemplates.uc">
       <SubType>Content</SubType>
     </Content>
     <Content Include="Src\WotCBallisticShields\Classes\X2DataStructure_BallisticShields.uc">
@@ -66,6 +78,9 @@ tags=shields, weapon, item, tank, wotc, war of the chosen</Description>
       <SubType>Content</SubType>
     </Content>
     <Content Include="Src\WotCBallisticShields\Classes\X2Effect_ShieldWall.uc">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="Src\WotCBallisticShields\Classes\X2EventListener_Shields.uc">
       <SubType>Content</SubType>
     </Content>
     <Content Include="Src\WotCBallisticShields\Classes\X2Item_Shield.uc">

@@ -5,7 +5,9 @@ simulated function OnEffectRemoved(const out EffectAppliedData ApplyEffectParame
 	local XComGameState_Unit UnitState;
 
 	UnitState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(ApplyEffectParameters.TargetStateObjectRef.ObjectID));
-	if (UnitState != None)
+
+	//	Update unit's cover to low only if they are actually affected by the effect that grants low cover.
+	if (UnitState != None && UnitState.IsUnitAffectedByEffectName('BallisticShield'))
 	{
 		UnitState = XComGameState_Unit(NewGameState.ModifyStateObject(UnitState.Class, UnitState.ObjectID));
 		UnitState.bGeneratesCover = true;

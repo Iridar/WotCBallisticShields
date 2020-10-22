@@ -1,6 +1,9 @@
 [XGLocalizedData_BallisticShields]
-m_strCategoryRestricted=WEAPON CANT BE USED WITH SHIELDS
+m_strCategoryRestricted="WEAPON CANT BE USED WITH SHIELDS"
 m_strAimPenalty="AIM PENALTY"
+
+m_strShieldCategory = "BALLISTIC SHIELD"
+m_strSparkShieldCategory = "SPARK BALLISTIC SHIELD"
 
 [X2DownloadableContentInfo_WotCBallisticShields]
 +m_arrAnimationPoses=(AnimationDisplayName="SHIELD ByTheBook")

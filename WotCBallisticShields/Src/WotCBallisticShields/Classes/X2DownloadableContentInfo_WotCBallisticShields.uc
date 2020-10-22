@@ -1,6 +1,7 @@
 class X2DownloadableContentInfo_WotCBallisticShields extends X2DownloadableContentInfo;
 
 var config(Content) array<AnimationPoses> m_arrAnimationPoses;
+var config(Shields) array<name> IgnoreCharacterTemplates;
 
 static event OnLoadedSavedGame()
 {
@@ -107,7 +108,7 @@ static function WeaponInitialized(XGWeapon WeaponArchetype, XComWeapon Weapon, o
 	}
 
 	UnitState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(ItemState.OwnerStateObject.ObjectID));
-	if (UnitState != none)
+	if (UnitState != none && default.IgnoreCharacterTemplates.Find(UnitState.GetMyTemplateName()) == INDEX_NONE)
 	{
 		WeaponTemplate = X2WeaponTemplate(ItemState.GetMyTemplate());
 	
@@ -146,7 +147,8 @@ static function bool CanAddItemToInventory_CH_Improved(out int bCanAddItem, cons
 	if (!UnitState.bIgnoreItemEquipRestrictions &&
 		WeaponTemplate != none &&
 		PrimaryWeapon != none &&
-		SecondaryWeapon != none
+		SecondaryWeapon != none &&
+		default.IgnoreCharacterTemplates.Find(UnitState.GetMyTemplateName()) == INDEX_NONE
 	)
 	{
 		if (X2WeaponTemplate(SecondaryWeapon.GetMyTemplate()).WeaponCat == 'Shield' &&
@@ -194,58 +196,174 @@ static function bool CanAddItemToInventory_CH_Improved(out int bCanAddItem, cons
 
 static function UpdateAnimations(out array<AnimSet> CustomAnimSets, XComGameState_Unit UnitState, XComUnitPawn Pawn)
 {
-	local X2WeaponTemplate PrimaryWeaponTemplate, SecondaryWeaponTemplate;
-	local string AnimSetToLoad;
+	local XComGameState_Item	PrimaryWeapon;
+	local XComGameState_Item	SecondaryWeapon;
+	local X2WeaponTemplate		PrimaryWeaponTemplate;
+	local X2WeaponTemplate		SecondaryWeaponTemplate;
+	local XComContentManager	Content;
 
-	if (UnitState == none || !UnitState.IsSoldier())
+
+	if (UnitState == none || !UnitState.IsSoldier() || default.IgnoreCharacterTemplates.Find(UnitState.GetMyTemplateName()) != INDEX_NONE)
 	{
 		return;
 	}
 
-	PrimaryWeaponTemplate = X2WeaponTemplate(UnitState.GetPrimaryWeapon().GetMyTemplate());
-	SecondaryWeaponTemplate = X2WeaponTemplate( UnitState.GetSecondaryWeapon().GetMyTemplate());
+	SecondaryWeapon = UnitState.GetSecondaryWeapon();
+	if (SecondaryWeapon != none)
+	{
+		SecondaryWeaponTemplate = X2WeaponTemplate(SecondaryWeapon.GetMyTemplate());
+	}
+	else
+	{
+		return;
+	}
+
+	PrimaryWeapon = UnitState.GetPrimaryWeapon();
+	if (PrimaryWeapon != none)
+	{
+		PrimaryWeaponTemplate = X2WeaponTemplate(PrimaryWeapon.GetMyTemplate());
+	}
 	
 	if (SecondaryWeaponTemplate.WeaponCat == 'shield')
 	{
 		`LOG(GetFuncName() @ UnitState.GetFullName() @ PrimaryWeaponTemplate.DataName @ SecondaryWeaponTemplate.DataName, class'X2Ability_ShieldAbilitySet'.default.bLog, 'WotCBallisticShields');
 
-		switch (PrimaryWeaponTemplate.WeaponCat)
+		Content = `CONTENT;
+		if (PrimaryWeaponTemplate != none)
 		{
-			case 'rifle':
-				AnimSetToLoad = "AnimSet'WoTC_Shield_Animations.Anims.AS_Shield_AssaultRifle'";
-				break;
-			case 'sidearm':
-				AnimSetToLoad = "AnimSet'WoTC_Shield_Animations.Anims.AS_Shield_AutoPistol'";
-				break;
-			case 'pistol': case 'sawedoff':
-				AnimSetToLoad = "AnimSet'WoTC_Shield_Animations.Anims.AS_Shield_Pistol'";
-				break;
-			case 'shotgun':
-				AnimSetToLoad = "AnimSet'WoTC_Shield_Animations.Anims.AS_Shield_Shotgun'";
-				break;
-			case 'bullpup':
-				AnimSetToLoad = "AnimSet'WoTC_Shield_Animations.Anims.AS_Shield_SMG'";
-				break;
-			case 'sword':
-			case 'combatknife':
-				AnimSetToLoad = "AnimSet'WoTC_Shield_Animations.Anims.AS_Shield_Sword'";
-				break;
+			switch (PrimaryWeaponTemplate.WeaponCat)
+			{
+				case 'rifle':
+					CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_AssaultRifle")));
+					break;
+				case 'sidearm':
+					CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_AutoPistol")));
+					break;
+				case 'pistol': 
+				case 'sawedoff':
+					CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_Pistol")));
+					break;
+				case 'shotgun':
+					CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_Shotgun")));
+					break;
+				case 'bullpup':
+					CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_SMG")));
+					break;
+				case 'sword':
+				case 'combatknife':
+					CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_Sword")));
+					break;
+				default:
+					break;
+			}
 		}
 
-		if (AnimSetToLoad != "")
-		{
-			CustomAnimSets.AddItem(AnimSet(`CONTENT.RequestGameArchetype(AnimSetToLoad)));
-		}
+		CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_Armory")));
 
-		CustomAnimSets.AddItem(AnimSet(`CONTENT.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_Armory")));
-
-		if (PrimaryWeaponTemplate.WeaponCat == 'sword')
+		if (PrimaryWeaponTemplate != none && PrimaryWeaponTemplate.WeaponCat == 'sword')
 		{
-			CustomAnimSets.AddItem(AnimSet(`CONTENT.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_Melee")));
+			CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield_Melee")));
 		}
 		else
 		{
-			CustomAnimSets.AddItem(AnimSet(`CONTENT.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield")));
+			CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Shield_Animations.Anims.AS_Shield")));
 		}
 	}
+	//	Assume that if the unit has a SPARK Ballistic Shield equipped, then they're a SPARK or a MEC Trooper.
+	if (SecondaryWeaponTemplate.WeaponCat == 'spark_shield')
+	{
+		Content = `CONTENT;
+
+		//	Shield animations need to be added here to replace the Walk Back animation on the Avenger. They also contain a Deflect animation.
+		CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Spark_Shields.Anims.AS_Spark_BallisticShield_Pawn")));
+
+		//	Hunker Down animations. Used by Shield Wall. 
+		CustomAnimSets.AddItem(AnimSet(Content.RequestGameArchetype("WoTC_Spark_Shields.Anims.AS_Spark_HunkerDown_Pawn")));
+	}
+}
+
+static function string DLCAppendSockets(XComUnitPawn Pawn)
+{
+	local XComGameState_Unit	UnitState;
+	
+	UnitState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(Pawn.ObjectID));
+	if (UnitState == none)
+		return "";
+
+	if (UnitCanEquipSparkShield(UnitState) || UnitHasSparkShieldEquipped(UnitState))
+	{
+		return "WoTC_Spark_Shields.Meshes.Spark_Shield_Sockets";
+	}
+
+	return "";
+}
+// Need to check it this way, because *after* the shield is equipped is too late to append the sockets.
+static final function bool UnitCanEquipSparkShield(const out XComGameState_Unit UnitState)
+{
+	local X2SoldierClassTemplate Template;
+
+	Template = class'X2SoldierClassTemplateManager'.static.GetSoldierClassTemplateManager().FindSoldierClassTemplate(UnitState.GetSoldierClassTemplateName());
+
+	return Template != none && Template.AllowedWeapons.Find('WeaponType', 'spark_shield') != INDEX_NONE;
+}
+
+static final function bool UnitHasSparkShieldEquipped(const out XComGameState_Unit UnitState)
+{
+	local XComGameState_Item	SecondaryWeapon;
+	local X2WeaponTemplate		SecondaryWeaponTemplate;
+
+	SecondaryWeapon = UnitState.GetSecondaryWeapon();
+	if (SecondaryWeapon != none)
+	{
+		SecondaryWeaponTemplate = X2WeaponTemplate(SecondaryWeapon.GetMyTemplate());
+
+		return SecondaryWeaponTemplate != none && SecondaryWeaponTemplate.WeaponCat == 'spark_shield';
+	}
+	return false;
+}
+
+static function bool AbilityTagExpandHandler(string InString, out string OutString)
+{
+	local name TagText;
+	
+	TagText = name(InString);
+	switch (TagText)
+	{
+	case 'BS_TAG_SHIELD_WALL_DEFENSE':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SHIELD_WALL_DEFENSE));
+		return true;
+	case 'BS_TAG_SHIELD_POINTS_CV':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SHIELD_POINTS_CV));
+		return true;
+	case 'BS_TAG_SHIELD_POINTS_MG':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SHIELD_POINTS_MG));
+		return true;
+	case 'BS_TAG_SHIELD_POINTS_BM':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SHIELD_POINTS_BM));
+		return true;
+	case 'BS_TAG_SPARK_SHIELD_POINTS_CV':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SPARK_SHIELD_POINTS_CV));
+		return true;
+	case 'BS_TAG_SPARK_SHIELD_POINTS_MG':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SPARK_SHIELD_POINTS_MG));
+		return true;
+	case 'BS_TAG_SPARK_SHIELD_POINTS_BM':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SPARK_SHIELD_POINTS_BM));
+		return true;
+	case 'BS_TAG_SHIELD_MOBILITY_PENALTY':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SHIELD_MOBILITY_PENALTY));
+		return true;
+	case 'BS_TAG_SHIELD_AIM_PENALTY':
+		OutString = SetColor(String(class'X2Ability_ShieldAbilitySet'.default.SHIELD_AIM_PENALTY));
+		return true;
+	
+	//	===================================================
+	default:
+            return false;
+    }  
+}
+
+static function string SetColor(string Value)
+{	
+	return "<font color='#64c4ce'>" $ Value $ "</font>";
 }

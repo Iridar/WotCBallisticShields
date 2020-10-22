@@ -8,6 +8,10 @@ var config int SHIELD_POINTS_CV;
 var config int SHIELD_POINTS_MG;
 var config int SHIELD_POINTS_BM;
 
+var config int SPARK_SHIELD_POINTS_CV;
+var config int SPARK_SHIELD_POINTS_MG;
+var config int SPARK_SHIELD_POINTS_BM;
+
 var config int SHIELD_MOBILITY_PENALTY;
 var config int SHIELD_AIM_PENALTY;
 
@@ -21,8 +25,13 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(BallisticShield('BallisticShield_CV', default.SHIELD_POINTS_CV));
 	Templates.AddItem(BallisticShield('BallisticShield_MG', default.SHIELD_POINTS_MG));
 	Templates.AddItem(BallisticShield('BallisticShield_BM', default.SHIELD_POINTS_BM));
+
+	Templates.AddItem(BallisticShield('SparkBallisticShield_CV', default.SPARK_SHIELD_POINTS_CV));
+	Templates.AddItem(BallisticShield('SparkBallisticShield_MG', default.SPARK_SHIELD_POINTS_MG));
+	Templates.AddItem(BallisticShield('SparkBallisticShield_BM', default.SPARK_SHIELD_POINTS_BM));
 	Templates.AddItem(ShieldBash());
 	Templates.AddItem(ShieldAnimSet());
+	Templates.AddItem(BallisticShield_GenerateCover());	
 	
 	return Templates;
 }
@@ -70,14 +79,13 @@ static function X2AbilityTemplate BallisticShield(name TemplateName, int ShieldH
 {
 	local X2AbilityTemplate Template;
 	local X2Effect_EnergyShield ShieldedEffect;
-	local X2Effect_GenerateCover CoverEffect;
 	local X2Effect_PersistentStatChange PersistentStatChangeEffect;
 
 	`CREATE_X2ABILITY_TEMPLATE(Template, TemplateName);
 	//Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_adventshieldbearer_energyshield";
 	Template.IconImage = "img:///WoTC_Shield_UI.BallisticShield_Icon";
 
-	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.AbilitySourceName = 'eAbilitySource_Item';
 	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
 	Template.Hostility = eHostility_Neutral;
 
@@ -89,18 +97,9 @@ static function X2AbilityTemplate BallisticShield(name TemplateName, int ShieldH
 	ShieldedEffect.BuildPersistentEffect(1, true, false, true, eGameRule_TacticalGameStart);
 	ShieldedEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage, true, , Template.AbilitySourceName);
 	ShieldedEffect.AddPersistentStatChange(eStat_ShieldHP, ShieldHPAmount);
-	ShieldedEffect.EffectName = 'Ballistic_Shield_Effect';	//	Brawler Class depends on this Effect Name, don't change pl0x
+	ShieldedEffect.EffectName = 'Ballistic_Shield_Effect';	//	Stormrider Class depends on this Effect Name, don't change pl0x
 	ShieldedEffect.DuplicateResponse = eDupe_Ignore;
 	Template.AddTargetEffect(ShieldedEffect);
-
-	CoverEffect = new class'X2Effect_GenerateCover';
-	CoverEffect.EffectName = 'BallisticShield';
-	CoverEffect.bRemoveWhenMoved = false;
-	CoverEffect.bRemoveOnOtherActivation = false;
-	CoverEffect.BuildPersistentEffect(1, true, false, false, eGameRule_PlayerTurnBegin);
-	CoverEffect.CoverType = CoverForce_Low;
-	CoverEffect.DuplicateResponse = eDupe_Allow;
-	Template.AddTargetEffect(CoverEffect);
 
 	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
 	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
@@ -118,6 +117,37 @@ static function X2AbilityTemplate BallisticShield(name TemplateName, int ShieldH
 	return Template;
 }
 
+static function X2AbilityTemplate BallisticShield_GenerateCover()
+{
+	local X2AbilityTemplate Template;
+	local X2Effect_GenerateCover CoverEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'BallisticShield_GenerateCover');
+
+	Template.IconImage = "img:///WoTC_Shield_UI.BallisticShield_Icon";
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.Hostility = eHostility_Neutral;
+	SetHidden(Template);
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
+	CoverEffect = new class'X2Effect_GenerateCover';
+	CoverEffect.EffectName = 'BallisticShield';
+	CoverEffect.bRemoveWhenMoved = false;
+	CoverEffect.bRemoveOnOtherActivation = false;
+	CoverEffect.BuildPersistentEffect(1, true, false, false, eGameRule_PlayerTurnBegin);
+	CoverEffect.CoverType = CoverForce_Low;
+	CoverEffect.DuplicateResponse = eDupe_Allow;
+	Template.AddTargetEffect(CoverEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
 static function X2AbilityTemplate ShieldBash()
 {
 	local X2AbilityTemplate                 Template;
@@ -125,33 +155,36 @@ static function X2AbilityTemplate ShieldBash()
 	Template = class'X2Ability_RangerAbilitySet'.static.AddSwordSliceAbility('ShieldBash');
 	Template.IconImage = "img:///WoTC_Shield_UI.ShieldBash_Icon";
 
-	Template.AddTargetEffect(class'X2StatusEffects'.static.CreateDisorientedStatusEffect(true, , false));
 	//Template.DefaultSourceItemSlot = eInvSlot_SecondaryWeapon;
 
-	Template.CustomFireAnim = 'FF_MeleeShieldBash';
-	Template.CustomFireKillAnim = 'FF_MeleeShieldBash';
-	Template.CustomMovingFireAnim = 'FF_MeleeShieldBash';
-	Template.CustomMovingFireKillAnim = 'FF_MeleeShieldBash';
-	Template.CustomMovingTurnLeftFireAnim = 'FF_MeleeShieldBash';
-	Template.CustomMovingTurnLeftFireKillAnim = 'FF_MeleeShieldBash';
-	Template.CustomMovingTurnRightFireAnim = 'FF_MeleeShieldBash';
-	Template.CustomMovingTurnRightFireKillAnim = 'FF_MeleeShieldBash';
+	// These don't appear to be in use anymore.
+	//Template.CustomFireAnim = 'FF_MeleeShieldBash';
+	//Template.CustomFireKillAnim = 'FF_MeleeShieldBash';
+	//Template.CustomMovingFireAnim = 'FF_MeleeShieldBash';
+	//Template.CustomMovingFireKillAnim = 'FF_MeleeShieldBash';
+	//Template.CustomMovingTurnLeftFireAnim = 'FF_MeleeShieldBash';
+	//Template.CustomMovingTurnLeftFireKillAnim = 'FF_MeleeShieldBash';
+	//Template.CustomMovingTurnRightFireAnim = 'FF_MeleeShieldBash';
+	//Template.CustomMovingTurnRightFireKillAnim = 'FF_MeleeShieldBash';
+
+	// Allow enemies to get knocked back on death. They're being bashed, not sliced through.
+	Template.bOverrideMeleeDeath = true;
 
 	return Template;
 }
 
 static function X2AbilityTemplate ShieldAnimSet()
 {
-    local X2AbilityTemplate                 Template;
-    local X2Effect_AdditionalAnimSets       AnimSets;
-	local X2Effect_ShieldAim				ShieldAim;
+    local X2AbilityTemplate						Template;
+    local X2Effect_AdditionalAnimSets			AnimSets;
+	local X2Effect_ShieldAim					ShieldAim;
+	local X2Condition_ExcludeCharacterTemplates	Condition;
 
     `CREATE_X2ABILITY_TEMPLATE(Template, 'ShieldAnimSet');
 
     Template.AbilitySourceName = 'eAbilitySource_Item';
-    Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+    SetHidden(Template);
     Template.Hostility = eHostility_Neutral;
-    Template.bDisplayInUITacticalText = false;
     
     Template.AbilityToHitCalc = default.DeadEye;
     Template.AbilityTargetStyle = default.SelfTarget;
@@ -164,10 +197,17 @@ static function X2AbilityTemplate ShieldAnimSet()
 	AnimSets.AddAnimSetWithPath("AnimSet'WoTC_Shield_Animations.Anims.AS_Shield_Medkit'");
     AnimSets.BuildPersistentEffect(1, true, false, false, eGameRule_TacticalGameStart);
     AnimSets.DuplicateResponse = eDupe_Ignore;
+
+	//	This effect will apply only to units whose character template name is not in the exclusion list.
+	Condition = new class'X2Condition_ExcludeCharacterTemplates';
+	AnimSets.TargetConditions.AddItem(Condition);
+
     Template.AddTargetEffect(AnimSets);
 
 	//	Gives the token +20 Aim to abilities attached to the shield (the Shield Bash).
 	//	Doing it this way instead of giving Aim directly to the weapon template out of concern for the UI Sat Markup.
+	//	The markup must be applied by this secondary weapon so the player can clearly see carrying a shield 
+	//	will apply the aim penalty to the soldier.
 	ShieldAim = new class'X2Effect_ShieldAim';
 	ShieldAim.BuildPersistentEffect(1, true);
 	Template.AddTargetEffect(ShieldAim);
@@ -177,4 +217,13 @@ static function X2AbilityTemplate ShieldAnimSet()
     Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
 
     return Template;
+}
+
+static function SetHidden(out X2AbilityTemplate Template)
+{
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDisplayInUITooltip = false;
+	Template.bDontDisplayInAbilitySummary = true;
+	Template.bHideOnClassUnlock = true;
 }
